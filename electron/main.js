@@ -35,15 +35,19 @@ function setCompactMode(value) {
   if (!mainWindow) return compactMode;
   if (compactMode) {
     normalBounds = mainWindow.getBounds();
+    if (process.platform === 'darwin' && mainWindow.setWindowButtonVisibility) mainWindow.setWindowButtonVisibility(false);
+    mainWindow.setBackgroundColor('#00000000');
     mainWindow.setAlwaysOnTop(true);
     mainWindow.setResizable(false);
     mainWindow.setMinimumSize(280, 300);
-    mainWindow.setSize(280, 300);
+    mainWindow.setSize(360, 400);
     const workArea = screen.getPrimaryDisplay().workArea;
-    mainWindow.setPosition(workArea.x + workArea.width - 300, workArea.y + workArea.height - 320);
+    mainWindow.setPosition(workArea.x + workArea.width - 380, workArea.y + workArea.height - 420);
     mainWindow.setSkipTaskbar(true);
     mainWindow.webContents.send('window:mode-changed', 'compact');
   } else {
+    if (process.platform === 'darwin' && mainWindow.setWindowButtonVisibility) mainWindow.setWindowButtonVisibility(true);
+    mainWindow.setBackgroundColor('#11151a');
     mainWindow.setSkipTaskbar(false);
     mainWindow.setResizable(true);
     mainWindow.setMinimumSize(860, 620);
@@ -94,6 +98,9 @@ function createWindow() {
     transparent: true,
     backgroundColor: '#00000000',
     hasShadow: false,
+    // 使用隐藏标题栏，让页面自己的顶部栏覆盖整个窗口，避免 macOS 原生透明标题区露出桌面。
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 14, y: 10 },
     visualEffectState: 'active',
     webPreferences: {
       contextIsolation: true,
@@ -104,11 +111,13 @@ function createWindow() {
   });
 
   mainWindow.loadURL('http://127.0.0.1:3000/');
+  if (process.platform === 'darwin' && mainWindow.setWindowButtonVisibility) mainWindow.setWindowButtonVisibility(true);
   mainWindow.once('ready-to-show', () => mainWindow.show());
-  mainWindow.on('close', (event) => {
+  // 点击窗口左上角关闭按钮时真正退出，避免用户以为已经退出但进程仍驻留。
+  mainWindow.on('close', () => {
     if (!app.isQuitting) {
-      event.preventDefault();
-      mainWindow.hide();
+      app.isQuitting = true;
+      app.quit();
     }
   });
 }
