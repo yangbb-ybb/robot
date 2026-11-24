@@ -13,27 +13,31 @@
     .app { height: 100vh; min-height: 0; display: grid; grid-template-rows: 36px minmax(0, 1fr); grid-template-columns: minmax(280px, 1fr) minmax(340px, 440px); overflow: hidden; background: #11151a; border-radius: 14px; }
     .window-bar { grid-column: 1 / -1; display: flex; align-items: center; padding: 0 14px 0 76px; color: #8f99a8; background: #171b21; border-bottom: 1px solid #363c46; -webkit-app-region: drag; user-select: none; font-size: 12px; letter-spacing: .04em; min-height: 36px; }
     .window-title { opacity: .9; }
-    body.compact .window-bar { display: flex !important; position: fixed; inset: 0 0 auto; z-index: 99999; width: 100%; height: 36px; padding-left: 76px; background: transparent !important; border-bottom: 0; color: rgba(255, 255, 255, .92); text-shadow: 0 1px 3px rgba(0, 0, 0, .85); }
-    body.compact, body.compact .app { background: transparent; }
-    body.compact { background: transparent; overflow: hidden; }
-    body:not(.compact) { background: #11151a; }
-    body.compact .app { height: 100vh; display: block; background: transparent; overflow: hidden; border-radius: 0; }
-    body.compact .stage { height: 100vh; min-height: 0; padding-top: 36px; background: transparent; }
-    body.compact .stage model-viewer { height: calc(100% - 36px); }
-    body.compact .window-bar { visibility: visible !important; opacity: 1 !important; }
-    body.compact model-viewer { transition: none !important; }
-    body.compact .brand, body.compact .stage-tip, body.compact .chat { display: none; }
-    body.compact .app, body.compact .stage { background: transparent; }
-    body.compact model-viewer { pointer-events: auto; }
-    body.compact model-viewer { display: block; width: 100%; height: 100%; min-height: 0; background: transparent !important; background-color: transparent !important; --poster-color: rgba(0, 0, 0, 0); }
-    body.compact model-viewer::part(default-progress-bar) { display: none; }
-    body.compact model-viewer canvas { background: transparent !important; }
-    .stage { min-height: 0; position: relative; display: flex; flex-direction: column; background: #171b21; }
-    .brand { padding: 22px 28px; font-size: 14px; letter-spacing: .08em; color: #b8c0cc; }
-    model-viewer { flex: 1; width: 100%; min-height: 0; --poster-color: #171b21; background: #171b21; }
+
+    .stage { min-height: 0; position: relative; display: flex; flex-direction: column; background: #171b21; overflow: hidden; }
+    .brand { padding: 20px 28px 0; font-size: 13px; letter-spacing: .08em; color: #b8c0cc; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .brand .mood-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 0; color: #9aa3af; }
+    .mood-pill .bar { width: 74px; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .14); overflow: hidden; }
+    .mood-pill .bar b { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #7f8ea3, #c8b0a4); transition: width .5s ease; }
+
+    .stage-body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    model-viewer { flex: 1; width: 100%; min-height: 0; --poster-color: #171b21; background: #171b21; cursor: grab; }
+    model-viewer:active { cursor: grabbing; }
     model-viewer::part(default-progress-bar) { background: #aab4c2; }
     model-viewer:not(:defined) { visibility: hidden; }
-    .stage-tip { padding: 16px 28px 24px; color: #9aa3af; font-size: 13px; }
+
+    .mood-ring { position: absolute; left: 50%; top: 50%; width: min(280px, 62%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(150, 170, 205, .18), rgba(150, 170, 205, 0) 68%); transition: opacity .6s ease, background .6s ease; opacity: .8; }
+    .mood-ring[data-mood="happy"] { background: radial-gradient(circle, rgba(232, 176, 158, .26), rgba(232, 176, 158, 0) 68%); }
+    .mood-ring[data-mood="thinking"] { background: radial-gradient(circle, rgba(168, 156, 214, .26), rgba(168, 156, 214, 0) 68%); }
+    .mood-ring[data-mood="sleepy"] { background: radial-gradient(circle, rgba(120, 130, 145, .12), rgba(120, 130, 145, 0) 68%); opacity: .45; }
+
+    .bubble { position: absolute; left: 50%; top: 12px; max-width: 76%; transform: translate(-50%, -6px) scale(.96); padding: 8px 14px; border-radius: 14px; background: rgba(30, 35, 43, .92); border: 1px solid rgba(255, 255, 255, .16); color: #eef1f5; font-size: 13px; line-height: 1.5; text-align: center; opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease; z-index: 5; backdrop-filter: blur(6px); }
+    .bubble.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+    .stage-tip { padding: 4px 24px 18px; color: #9aa3af; font-size: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .quick { display: flex; gap: 8px; flex-wrap: wrap; }
+    .quick button { padding: 7px 12px; font-size: 12px; border-radius: 999px; }
+
     .chat { min-height: 0; display: flex; flex-direction: column; border-left: 1px solid #363c46; background: #15191f; }
     .chat-head { flex: 0 0 auto; padding: 25px 24px 18px; border-bottom: 1px solid #363c46; }
     .chat-head h1 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
@@ -42,6 +46,7 @@
     .message { max-width: 92%; white-space: pre-wrap; line-height: 1.6; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; font-size: 14px; }
     .assistant { background: #252b34; color: #e5e9ef; }
     .user { margin-left: auto; background: #3a4655; color: #f4f6f8; }
+    .pending { color: #9aa3af; font-style: italic; }
     .composer { flex: 0 0 auto; padding: 16px; border-top: 1px solid #363c46; }
     textarea { width: 100%; min-height: 76px; resize: vertical; border: 1px solid #4a5563; border-radius: 10px; background: #101419; color: #eef1f5; padding: 12px; font: inherit; outline: none; }
     textarea:focus { border-color: #aab4c2; }
@@ -51,16 +56,46 @@
     button.primary { background: #566476; border-color: #7d8a9b; }
     button:disabled { opacity: .5; cursor: not-allowed; }
     .status { color: #9aa3af; font-size: 12px; }
+
+    /* 机器人悬浮模式：保持完全透明，只留下角色和顶部栏 */
+    body.compact, body.compact .app { background: transparent; }
+    body.compact { background: transparent; overflow: hidden; }
+    body:not(.compact) { background: #11151a; }
+    body.compact .app { height: 100vh; display: block; background: transparent; overflow: hidden; border-radius: 0; }
+    body.compact .stage { height: 100vh; min-height: 0; padding-top: 36px; background: transparent; }
+    body.compact .stage-body { flex: 1 1 auto; min-height: 0; }
+    body.compact model-viewer { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; display: block; background: transparent !important; background-color: transparent !important; --poster-color: rgba(0, 0, 0, 0); }
+    body.compact model-viewer::part(default-progress-bar) { display: none; }
+    body.compact model-viewer canvas { background: transparent !important; }
+    body.compact .brand, body.compact .stage-tip, body.compact .chat, body.compact .mood-ring { display: none; }
+    body.compact .bubble { top: 8px; background: rgba(26, 30, 36, .85); }
+    body.compact .window-bar { display: flex !important; position: fixed; inset: 0 0 auto; z-index: 99999; width: 100%; height: 36px; padding-left: 76px; background: transparent !important; border-bottom: 0; color: rgba(255, 255, 255, .92); text-shadow: 0 1px 3px rgba(0, 0, 0, .85); }
+    body.compact model-viewer { transition: none !important; }
+
     @media (max-width: 760px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; display: flex; flex-direction: column; overflow: visible; } .stage { min-height: 48vh; } model-viewer { min-height: 300px; } .chat { min-height: 52vh; height: 52vh; border-left: 0; border-top: 1px solid #363c46; } }
   </style>
 </head>
 <body>
   <main class="app">
     <div class="window-bar"><span class="window-title">3D 智能聊天助手</span></div>
-    <section class="stage">
-      <div class="brand">INTERACTIVE ASSISTANT / 3D CORE</div>
-      <model-viewer id="assistant" src="/assets/assistant.glb" alt="3D 智能助手" camera-controls auto-rotate shadow-intensity="0.35" style="background: transparent; --poster-color: rgba(0, 0, 0, 0);"></model-viewer>
-      <div class="stage-tip">点击或拖动助手进行观察。语音入口已预留，后续接入语音识别服务。</div>
+    <section class="stage" id="stage">
+      <div class="brand">
+        <span>INTERACTIVE ASSISTANT / 3D CORE</span>
+        <span class="mood-pill"><span id="moodText">心情：待机</span><i class="bar"><b id="bondBar"></b></i><span id="bondText">亲和度 0</span></span>
+      </div>
+      <div class="stage-body">
+        <div class="mood-ring" id="ring" data-mood="idle"></div>
+        <model-viewer id="assistant" src="/assets/assistant.glb" alt="3D 智能助手" camera-controls shadow-intensity="0.35" style="background: transparent; --poster-color: rgba(0, 0, 0, 0);"></model-viewer>
+        <div class="bubble" id="bubble"></div>
+      </div>
+      <div class="stage-tip">
+        <div class="quick">
+          <button id="act-hello" type="button">打个招呼</button>
+          <button id="act-pat" type="button">摸摸头</button>
+          <button id="act-rest" type="button">去休息</button>
+        </div>
+        <span>她会跟着鼠标转头、被戳会害羞、思考时会自己转圈。也可以拖动查看。</span>
+      </div>
     </section>
     <section class="chat">
       <header class="chat-head"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><div><h1>智能聊天助手</h1><p>把想法告诉我，我会先记录并准备拆解。</p></div><span style="display:flex;gap:8px;"><button id="mode" type="button" title="切换到右下角机器人模式">悬浮机器人</button><button id="pin" type="button" title="切换窗口置顶">置顶：关</button></span></div></header>
@@ -74,24 +109,373 @@
   <script>
     const messages = document.querySelector('#messages');
     const input = document.querySelector('#input');
-    const status = document.querySelector('#status');
+    const statusEl = document.querySelector('#status');
+    const stage = document.querySelector('#stage');
     const assistant = document.querySelector('#assistant');
+    const ring = document.querySelector('#ring');
+    const bubble = document.querySelector('#bubble');
+    const moodText = document.querySelector('#moodText');
+    const bondBar = document.querySelector('#bondBar');
+    const bondText = document.querySelector('#bondText');
     const pin = document.querySelector('#pin');
     const mode = document.querySelector('#mode');
+
+    const MOOD_LABEL = { idle: '待机', curious: '好奇', happy: '开心', shy: '害羞', thinking: '思考中', speaking: '说话中', sleepy: '犯困', annoyed: '有点晕' };
+    const state = {
+      mood: 'idle',
+      bond: Number(localStorage.getItem('assistant-bond') || 0),
+      lastActive: Date.now(),
+      dragging: false,
+      dragStartOrbit: null,
+      typing: false,
+      sleeping: false,
+      base: null,
+      followFrame: 0,
+      followPointer: null,
+      bubbleTimer: null,
+      moodTimer: null,
+      busy: false
+    };
+
+    /* ---------- 基础状态与数值 ---------- */
+
+    const saveBond = () => localStorage.setItem('assistant-bond', String(state.bond));
+
+    const updateBond = (delta) => {
+      state.bond = Math.max(0, Math.min(999, state.bond + delta));
+      saveBond();
+      const level = Math.floor(state.bond / 40) + 1;
+      bondBar.style.width = `${(state.bond % 40) / 40 * 100}%`;
+      bondText.textContent = `亲和度 Lv.${level}`;
+    };
+
+    const setMood = (next, holdMs) => {
+      state.mood = next;
+      ring.dataset.mood = next === 'curious' ? 'idle' : next;
+      moodText.textContent = `心情：${MOOD_LABEL[next] || '待机'}`;
+      assistant.setAttribute('exposure', next === 'sleepy' ? '0.82' : '1.05');
+      assistant.style.filter = next === 'sleepy' ? 'saturate(.72) brightness(.9)' : '';
+      if (state.moodTimer) clearTimeout(state.moodTimer);
+      if (holdMs) {
+        state.moodTimer = setTimeout(() => {
+          if (state.mood === next) setMood(state.sleeping ? 'sleepy' : 'idle');
+        }, holdMs);
+      }
+    };
+
+    const showBubble = (text, ms = 2600) => {
+      bubble.textContent = text;
+      bubble.classList.add('show');
+      if (state.bubbleTimer) clearTimeout(state.bubbleTimer);
+      state.bubbleTimer = setTimeout(() => bubble.classList.remove('show'), ms);
+    };
+
+    /* ---------- 动作动画 ---------- */
+
+    const bounce = (strength = 1) => {
+      assistant.animate([
+        { transform: 'translateY(0) scale(1)' },
+        { transform: `translateY(${-10 * strength}px) scale(${1 + 0.02 * strength})` },
+        { transform: 'translateY(0) scale(1)' }
+      ], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+    };
+
+    const nod = () => {
+      assistant.animate([
+        { transform: 'rotate(0deg)' },
+        { transform: 'rotate(-2.5deg)' },
+        { transform: 'rotate(2.5deg)' },
+        { transform: 'rotate(0deg)' }
+      ], { duration: 480, easing: 'ease-in-out' });
+    };
+
+    const shake = () => {
+      assistant.animate([
+        { transform: 'translateX(0) rotate(0deg)' },
+        { transform: 'translateX(-5px) rotate(-1.5deg)' },
+        { transform: 'translateX(5px) rotate(1.5deg)' },
+        { transform: 'translateX(-3px) rotate(-1deg)' },
+        { transform: 'translateX(0) rotate(0deg)' }
+      ], { duration: 380, easing: 'ease-in-out' });
+    };
+
+    /* ---------- 相机：跟随鼠标转头 ---------- */
+
+    const saveBaseOrbit = () => {
+      if (typeof assistant.getCameraOrbit !== 'function') return;
+      const orbit = assistant.getCameraOrbit();
+      if (!orbit) return;
+      state.base = {
+        theta: orbit.theta * 180 / Math.PI,
+        phi: orbit.phi * 180 / Math.PI,
+        radius: orbit.radius
+      };
+    };
+
+    const applyFollow = () => {
+      state.followFrame = 0;
+      if (!state.base || !state.followPointer || state.dragging || state.sleeping) return;
+      const rect = assistant.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const nx = Math.max(-.5, Math.min(.5, (state.followPointer.x - rect.left) / rect.width - .5));
+      const ny = Math.max(-.5, Math.min(.5, (state.followPointer.y - rect.top) / rect.height - .5));
+      const theta = state.base.theta + nx * 30;
+      const phi = Math.max(62, Math.min(104, state.base.phi - ny * 12));
+      assistant.setAttribute('camera-orbit', `${theta.toFixed(2)}deg ${phi.toFixed(2)}deg ${state.base.radius}m`);
+    };
+
+    const queueFollow = (event) => {
+      state.followPointer = { x: event.clientX, y: event.clientY };
+      if (!state.followFrame) state.followFrame = requestAnimationFrame(applyFollow);
+    };
+
+    const startSpin = (degPerSecond = 90) => {
+      assistant.setAttribute('auto-rotate', '');
+      assistant.setAttribute('rotation-per-second', `${degPerSecond}deg`);
+    };
+
+    const stopSpin = () => {
+      assistant.removeAttribute('auto-rotate');
+      assistant.removeAttribute('rotation-per-second');
+      if (state.base) assistant.setAttribute('camera-orbit', `${state.base.theta}deg ${state.base.phi}deg ${state.base.radius}m`);
+    };
+
+    /* ---------- 互动反馈 ---------- */
+
+    const HELLO_LINES = ['我在。今天想先做哪一件事？', '嗨，我一直在这。', '你来了，我等你好久了。'];
+    const PAT_LINES = ['唔……被摸头了。', '再摸一下，就一下。', '谢谢你，今天也辛苦了。'];
+    const POKE_LINES = ['诶？你戳我。', '我在呢，随时可以开始。', '轻一点，会痒的。', '这样戳我，是想聊天吗？'];
+    const SHY_LINES = ['别一直看着我啦……', '是不是有点太近了？', '我、我有点不好意思。'];
+    const DIZZY_LINES = ['晕啦，别转这么快。', '慢一点，我跟不上你了。'];
+    const AMBIENT_LINES = ['要不要把那个想法写下来？', '我在这里，随时可以开始。', '安静一会儿也挺好的。'];
+    const WAKE_LINES = ['我没睡，只是在想事情。', '嗯？你回来了。'];
+
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+    const logEvent = (name, extra = {}) => {
+      fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: name, mood: state.mood, bond: state.bond, ...extra })
+      }).catch(() => {});
+    };
+
+    const greet = () => {
+      if (state.busy) return;
+      state.lastActive = Date.now();
+      wakeUp();
+      setMood('happy', 2200);
+      bounce(1);
+      showBubble(state.bond >= 80 ? pick(HELLO_LINES) + '（亲和度高）' : pick(HELLO_LINES));
+      updateBond(2);
+      add('我朝你挥了挥手。', 'assistant');
+      logEvent('assistant_greet');
+    };
+
+    const pat = () => {
+      if (state.busy) return;
+      state.lastActive = Date.now();
+      wakeUp();
+      setMood('shy', 2600);
+      nod();
+      showBubble(pick(PAT_LINES));
+      updateBond(4);
+      add('她被摸头了，看起来有点高兴。', 'assistant');
+      logEvent('assistant_pat');
+    };
+
+    const poke = () => {
+      if (state.busy) return;
+      state.lastActive = Date.now();
+      wakeUp();
+      const familiar = state.bond >= 120;
+      setMood(familiar ? 'shy' : 'happy', 2200);
+      bounce(0.8);
+      showBubble(familiar ? pick(SHY_LINES) : pick(POKE_LINES));
+      updateBond(2);
+      logEvent('assistant_click');
+    };
+
+    const rest = () => {
+      state.sleeping = true;
+      setMood('sleepy');
+      stopSpin();
+      showBubble('那我先安静一会儿，你叫我一声就好。', 3200);
+      add('她闭上眼睛，进入了待机状态。', 'assistant');
+      logEvent('assistant_rest');
+    };
+
+    const wakeUp = () => {
+      if (!state.sleeping) return;
+      state.sleeping = false;
+      setMood('curious', 1600);
+      showBubble(pick(WAKE_LINES));
+    };
+
+    /* ---------- 鼠标与拖拽 ---------- */
+
+    stage.addEventListener('pointermove', (event) => {
+      if (state.dragging) return;
+      if (state.mood === 'idle' && Math.random() < 0.01) setMood('curious', 1200);
+      queueFollow(event);
+    });
+
+    assistant.addEventListener('pointerdown', () => {
+      state.dragging = true;
+      state.lastActive = Date.now();
+      if (typeof assistant.getCameraOrbit === 'function') {
+        const orbit = assistant.getCameraOrbit();
+        state.dragStartOrbit = orbit ? orbit.theta * 180 / Math.PI : null;
+      }
+    });
+
+    const endDrag = () => {
+      if (!state.dragging) return;
+      state.dragging = false;
+      if (state.dragStartOrbit !== null && typeof assistant.getCameraOrbit === 'function') {
+        const orbit = assistant.getCameraOrbit();
+        const now = orbit ? orbit.theta * 180 / Math.PI : state.dragStartOrbit;
+        let delta = Math.abs(now - state.dragStartOrbit);
+        if (delta > 180) delta = 360 - delta;
+        if (delta > 110) {
+          setMood('annoyed', 1800);
+          shake();
+          showBubble(pick(DIZZY_LINES));
+        } else {
+          saveBaseOrbit();
+        }
+      }
+      state.dragStartOrbit = null;
+      if (state.followPointer) queueFollow({ clientX: state.followPointer.x, clientY: state.followPointer.y });
+    };
+
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+
+    assistant.addEventListener('click', poke);
+    assistant.addEventListener('dblclick', () => { if (!state.busy) greet(); });
+
+    /* ---------- 空闲与自主动作 ---------- */
+
+    setInterval(() => {
+      const idleFor = Date.now() - state.lastActive;
+      if (state.busy) return;
+      if (idleFor > 120000 && !state.sleeping) {
+        state.sleeping = true;
+        setMood('sleepy');
+        showBubble('等太久了，我先眯一会儿。', 3000);
+      }
+    }, 5000);
+
+    setInterval(() => {
+      if (state.busy || state.sleeping || state.dragging) return;
+      if (Date.now() - state.lastActive < 15000) return;
+      setMood('curious', 1800);
+      showBubble(pick(AMBIENT_LINES), 3000);
+      bounce(0.4);
+    }, 32000);
+
+    /* ---------- 聊天 ---------- */
+
+    const add = (text, who) => {
+      const el = document.createElement('div');
+      el.className = `message ${who}`;
+      el.textContent = text;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+      return el;
+    };
+
+    const setBusy = (value, mood) => {
+      state.busy = value;
+      if (value && mood) setMood(mood);
+      if (!value) setMood(state.sleeping ? 'sleepy' : 'idle');
+    };
+
     const updatePinLabel = (value) => { pin.textContent = value ? '置顶：开' : '置顶：关'; };
     const updateModeLabel = (value) => { mode.textContent = value ? '恢复聊天窗口' : '悬浮机器人'; };
-    const applyMode = (modeName) => { const compact = modeName === 'compact'; document.body.classList.toggle('compact', compact); assistant.setAttribute('shadow-intensity', compact ? '0' : '0.35'); assistant.style.background = 'transparent'; assistant.style.setProperty('--poster-color', 'rgba(0, 0, 0, 0)'); updateModeLabel(compact); };
+
+    const applyMode = (modeName) => {
+      const compact = modeName === 'compact';
+      document.body.classList.toggle('compact', compact);
+      assistant.setAttribute('shadow-intensity', compact ? '0' : '0.35');
+      assistant.style.background = 'transparent';
+      assistant.style.setProperty('--poster-color', 'rgba(0, 0, 0, 0)');
+      updateModeLabel(compact);
+      requestAnimationFrame(() => { saveBaseOrbit(); if (state.followPointer) queueFollow(state.followPointer); });
+    };
+
     if (window.desktop) {
       window.desktop.getAlwaysOnTop().then(updatePinLabel);
-      window.desktop.getMode().then((mode) => applyMode(mode ? 'compact' : 'normal'));
+      window.desktop.getMode().then((value) => applyMode(value ? 'compact' : 'normal'));
       pin.addEventListener('click', async () => updatePinLabel(await window.desktop.setAlwaysOnTop(!(pin.textContent === '置顶：开'))));
       mode.addEventListener('click', async () => applyMode((await window.desktop.setMode(!document.body.classList.contains('compact'))) ? 'compact' : 'normal'));
       window.desktop.onModeChanged(applyMode);
     }
-    const add = (text, who) => { const el = document.createElement('div'); el.className = `message ${who}`; el.textContent = text; messages.appendChild(el); messages.scrollTop = messages.scrollHeight; };
-    assistant.addEventListener('click', () => { add('你点击了我。后续这里可以绑定角色动作、状态切换或任务快捷入口。', 'assistant'); fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'assistant_click' }) }); });
-    document.querySelector('#voice').addEventListener('click', () => { status.textContent = '语音转文字接口已预留，后续接入'; add('语音输入功能已预留，当前还不会调用识别服务。', 'assistant'); });
-    document.querySelector('#composer').addEventListener('submit', async (event) => { event.preventDefault(); const text = input.value.trim(); if (!text) return; add(text, 'user'); input.value = ''; status.textContent = '正在请求后端…'; try { const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, source: 'text' }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || '请求失败'); add(data.reply, 'assistant'); status.textContent = '后端已连接 · 数据已记录'; } catch (error) { add(`暂时无法连接后端：${error.message}`, 'assistant'); status.textContent = '后端连接失败'; } });
+
+    assistant.addEventListener('load', () => {
+      saveBaseOrbit();
+      updateBond(0);
+      setTimeout(() => { if (!state.sleeping) showBubble('我准备好了，随时可以开始。', 2600); }, 600);
+    });
+
+    assistant.addEventListener('error', () => {
+      statusEl.textContent = '模型加载失败';
+      showBubble('模型没有加载出来，检查一下资源文件。', 4000);
+    });
+
+    document.querySelector('#act-hello').addEventListener('click', greet);
+    document.querySelector('#act-pat').addEventListener('click', pat);
+    document.querySelector('#act-rest').addEventListener('click', rest);
+
+    document.querySelector('#voice').addEventListener('click', () => {
+      state.lastActive = Date.now();
+      setMood('curious', 2000);
+      statusEl.textContent = '语音转文字接口已预留，后续接入';
+      add('语音输入功能已预留，当前还不会调用识别服务。', 'assistant');
+      showBubble('语音还没接好，先用文字聊吧。');
+    });
+
+    document.querySelector('#composer').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text || state.busy) return;
+      state.lastActive = Date.now();
+      wakeUp();
+      add(text, 'user');
+      input.value = '';
+      setBusy(true, 'thinking');
+      startSpin(110);
+      statusEl.textContent = '正在思考…';
+      const pending = add('正在思考…', 'assistant pending');
+      showBubble('让我想一想。', 8000);
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, source: 'text' })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '请求失败');
+        pending.remove();
+        stopSpin();
+        setBusy(false);
+        setMood('speaking', 2600);
+        bounce(0.9);
+        add(data.reply, 'assistant');
+        showBubble('说完了，你接着讲。');
+        statusEl.textContent = '后端已连接 · 数据已记录';
+        updateBond(5);
+      } catch (error) {
+        pending.remove();
+        stopSpin();
+        setBusy(false);
+        setMood('annoyed', 2000);
+        shake();
+        add(`暂时无法连接后端：${error.message}`, 'assistant');
+        statusEl.textContent = '后端连接失败';
+      }
+    });
   </script>
 </body>
 </html>
