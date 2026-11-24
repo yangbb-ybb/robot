@@ -6,11 +6,11 @@
   <title>3D 智能聊天助手</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    :root { color-scheme: dark; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: transparent; color: #e8f3f3; }
+    :root { color-scheme: dark; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: transparent; color: #eef1f5; }
     * { box-sizing: border-box; }
     html, body { min-height: 100%; }
-    body { margin: 0; min-height: 100vh; overflow: hidden; background: #0c171b; }
-    .app { height: 100vh; min-height: 0; display: grid; grid-template-columns: minmax(280px, 1fr) minmax(340px, 440px); overflow: hidden; background: #0c171b; }
+    body { margin: 0; min-height: 100vh; overflow: hidden; background: #11151a; }
+    .app { height: 100vh; min-height: 0; display: grid; grid-template-columns: minmax(280px, 1fr) minmax(340px, 440px); overflow: hidden; background: #11151a; }
     body.compact, body.compact .app { background: transparent; }
     body.compact { background: transparent; overflow: hidden; }
     body.compact .app { height: 100vh; display: block; background: transparent; overflow: hidden; }
@@ -21,30 +21,30 @@
     body.compact model-viewer { display: block; width: 100%; height: 100%; min-height: 0; background: transparent !important; background-color: transparent !important; --poster-color: rgba(0, 0, 0, 0); }
     body.compact model-viewer::part(default-progress-bar) { display: none; }
     body.compact model-viewer canvas { background: transparent !important; }
-    .stage { min-height: 0; position: relative; display: flex; flex-direction: column; background: #102126; }
-    .brand { padding: 22px 28px; font-size: 14px; letter-spacing: .08em; color: #8edbd0; }
-    model-viewer { flex: 1; width: 100%; min-height: 0; --poster-color: #102126; background: #102126; }
-    model-viewer::part(default-progress-bar) { background: #51c9bc; }
+    .stage { min-height: 0; position: relative; display: flex; flex-direction: column; background: #171b21; }
+    .brand { padding: 22px 28px; font-size: 14px; letter-spacing: .08em; color: #b8c0cc; }
+    model-viewer { flex: 1; width: 100%; min-height: 0; --poster-color: #171b21; background: #171b21; }
+    model-viewer::part(default-progress-bar) { background: #aab4c2; }
     model-viewer:not(:defined) { visibility: hidden; }
-    .stage-tip { padding: 16px 28px 24px; color: #8aa4a7; font-size: 13px; }
-    .chat { min-height: 0; display: flex; flex-direction: column; border-left: 1px solid #294247; background: #101c20; }
-    .chat-head { flex: 0 0 auto; padding: 25px 24px 18px; border-bottom: 1px solid #294247; }
+    .stage-tip { padding: 16px 28px 24px; color: #9aa3af; font-size: 13px; }
+    .chat { min-height: 0; display: flex; flex-direction: column; border-left: 1px solid #363c46; background: #15191f; }
+    .chat-head { flex: 0 0 auto; padding: 25px 24px 18px; border-bottom: 1px solid #363c46; }
     .chat-head h1 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
-    .chat-head p { margin: 0; color: #8aa4a7; font-size: 13px; }
+    .chat-head p { margin: 0; color: #9aa3af; font-size: 13px; }
     .messages { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 22px 20px; }
     .message { max-width: 92%; white-space: pre-wrap; line-height: 1.6; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; font-size: 14px; }
-    .assistant { background: #1c3338; color: #d7eeee; }
-    .user { margin-left: auto; background: #17675f; color: #effffc; }
-    .composer { flex: 0 0 auto; padding: 16px; border-top: 1px solid #294247; }
-    textarea { width: 100%; min-height: 76px; resize: vertical; border: 1px solid #35565b; border-radius: 10px; background: #0c171b; color: #e8f3f3; padding: 12px; font: inherit; outline: none; }
-    textarea:focus { border-color: #51c9bc; }
+    .assistant { background: #252b34; color: #e5e9ef; }
+    .user { margin-left: auto; background: #3a4655; color: #f4f6f8; }
+    .composer { flex: 0 0 auto; padding: 16px; border-top: 1px solid #363c46; }
+    textarea { width: 100%; min-height: 76px; resize: vertical; border: 1px solid #4a5563; border-radius: 10px; background: #101419; color: #eef1f5; padding: 12px; font: inherit; outline: none; }
+    textarea:focus { border-color: #aab4c2; }
     .actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
-    button { border: 1px solid #3d666b; border-radius: 8px; background: #183238; color: #dff8f5; padding: 9px 13px; cursor: pointer; font: inherit; }
-    button:hover { background: #22474d; }
-    button.primary { background: #188276; border-color: #38b9aa; }
+    button { border: 1px solid #566272; border-radius: 8px; background: #252c35; color: #e8ecf1; padding: 9px 13px; cursor: pointer; font: inherit; }
+    button:hover { background: #313a46; }
+    button.primary { background: #566476; border-color: #7d8a9b; }
     button:disabled { opacity: .5; cursor: not-allowed; }
-    .status { color: #8aa4a7; font-size: 12px; }
-    @media (max-width: 760px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; display: flex; flex-direction: column; overflow: visible; } .stage { min-height: 48vh; } model-viewer { min-height: 300px; } .chat { min-height: 52vh; height: 52vh; border-left: 0; border-top: 1px solid #294247; } }
+    .status { color: #9aa3af; font-size: 12px; }
+    @media (max-width: 760px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; display: flex; flex-direction: column; overflow: visible; } .stage { min-height: 48vh; } model-viewer { min-height: 300px; } .chat { min-height: 52vh; height: 52vh; border-left: 0; border-top: 1px solid #363c46; } }
   </style>
 </head>
 <body>
