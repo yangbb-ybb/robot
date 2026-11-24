@@ -1,0 +1,18 @@
+{
+  "name": "interactive-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "3D 智能聊天助手前后端项目",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "web": "node server/index.js",
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
