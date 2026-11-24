@@ -36,6 +36,8 @@ function setCompactMode(value) {
   if (compactMode) {
     normalBounds = mainWindow.getBounds();
     if (process.platform === 'darwin' && mainWindow.setWindowButtonVisibility) mainWindow.setWindowButtonVisibility(false);
+    // 先切换页面透明样式，再做窗口缩放，避免缩放/重排期间暂时显示旧背景。
+    mainWindow.webContents.send('window:mode-changed', 'compact');
     mainWindow.setBackgroundColor('#00000000');
     mainWindow.setAlwaysOnTop(true);
     mainWindow.setResizable(false);
@@ -44,7 +46,6 @@ function setCompactMode(value) {
     const workArea = screen.getPrimaryDisplay().workArea;
     mainWindow.setPosition(workArea.x + workArea.width - 380, workArea.y + workArea.height - 420);
     mainWindow.setSkipTaskbar(true);
-    mainWindow.webContents.send('window:mode-changed', 'compact');
   } else {
     if (process.platform === 'darwin' && mainWindow.setWindowButtonVisibility) mainWindow.setWindowButtonVisibility(true);
     mainWindow.setBackgroundColor('#11151a');
