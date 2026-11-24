@@ -4,7 +4,7 @@ const { spawn } = require('child_process');
 const http = require('http');
 
 app.commandLine.appendSwitch('no-sandbox');
-app.commandLine.appendSwitch('disable-gpu');
+// 3D model-viewer 依赖 WebGL；不能禁用 GPU，否则模型会加载但无法渲染。
 
 let mainWindow;
 let tray;

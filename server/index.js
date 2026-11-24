@@ -38,9 +38,16 @@ function appendRecord(type, data) {
 }
 
 function serveStatic(req, res) {
-  const requested = decodeURIComponent(req.url === '/' ? '/index.html' : req.url.split('?')[0]);
+  let requested;
+  try {
+    requested = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname || '/');
+  } catch {
+    return sendJson(res, 400, { error: '资源路径不正确' });
+  }
+  if (requested === '/') requested = '/index.html';
   const target = path.resolve(publicDir, '.' + requested);
-  if (!target.startsWith(publicDir)) return sendJson(res, 403, { error: '禁止访问' });
+  const relative = path.relative(publicDir, target);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) return sendJson(res, 403, { error: '禁止访问' });
   fs.stat(target, (err, stat) => {
     if (err || !stat.isFile()) return sendJson(res, 404, { error: '页面或资源不存在' });
     const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.glb': 'model/gltf-binary', '.png': 'image/png' };
