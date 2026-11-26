@@ -4,7 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>3D 智能聊天助手</title>
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script type="importmap">
+    { "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    } }
+  </script>
   <style>
     :root { color-scheme: dark; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: transparent; color: #eef1f5; }
     * { box-sizing: border-box; }
@@ -21,10 +26,10 @@
     .mood-pill .bar b { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #7f8ea3, #c8b0a4); transition: width .5s ease; }
 
     .stage-body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-    model-viewer { flex: 1; width: 100%; min-height: 0; --poster-color: #171b21; background: #171b21; cursor: grab; }
-    model-viewer:active { cursor: grabbing; }
-    model-viewer::part(default-progress-bar) { background: #aab4c2; }
-    model-viewer:not(:defined) { visibility: hidden; }
+    #viewport { flex: 1 1 auto; min-height: 0; position: relative; cursor: grab; }
+    #viewport:active { cursor: grabbing; }
+    #viewport canvas { display: block; width: 100%; height: 100%; }
+    .load-tip { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #8f99a8; font-size: 13px; letter-spacing: .08em; pointer-events: none; }
 
     .mood-ring { position: absolute; left: 50%; top: 50%; width: min(280px, 62%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(150, 170, 205, .18), rgba(150, 170, 205, 0) 68%); transition: opacity .6s ease, background .6s ease; opacity: .8; }
     .mood-ring[data-mood="happy"] { background: radial-gradient(circle, rgba(232, 176, 158, .26), rgba(232, 176, 158, 0) 68%); }
@@ -33,6 +38,11 @@
 
     .bubble { position: absolute; left: 50%; top: 12px; max-width: 76%; transform: translate(-50%, -6px) scale(.96); padding: 8px 14px; border-radius: 14px; background: rgba(30, 35, 43, .92); border: 1px solid rgba(255, 255, 255, .16); color: #eef1f5; font-size: 13px; line-height: 1.5; text-align: center; opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .22s ease; z-index: 5; backdrop-filter: blur(6px); }
     .bubble.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+    .hit-hint { position: absolute; transform: translate(-50%, -140%); padding: 4px 9px; border-radius: 8px; background: rgba(24, 28, 34, .92); border: 1px solid rgba(255, 255, 255, .18); color: #e9edf3; font-size: 11px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .18s ease; z-index: 6; }
+    .hit-hint.show { opacity: 1; }
+    .ripple { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; border: 2px solid rgba(240, 214, 200, .95); pointer-events: none; z-index: 7; animation: ripple .7s ease-out forwards; }
+    @keyframes ripple { from { transform: scale(.4); opacity: .95; } to { transform: scale(5.2); opacity: 0; } }
 
     .stage-tip { padding: 4px 24px 18px; color: #9aa3af; font-size: 12px; display: flex; flex-direction: column; gap: 10px; }
     .quick { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -64,15 +74,11 @@
     body.compact .app { height: 100vh; display: block; background: transparent; overflow: hidden; border-radius: 0; }
     body.compact .stage { height: 100vh; min-height: 0; padding-top: 36px; background: transparent; }
     body.compact .stage-body { flex: 1 1 auto; min-height: 0; }
-    body.compact model-viewer { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; display: block; background: transparent !important; background-color: transparent !important; --poster-color: rgba(0, 0, 0, 0); }
-    body.compact model-viewer::part(default-progress-bar) { display: none; }
-    body.compact model-viewer canvas { background: transparent !important; }
     body.compact .brand, body.compact .stage-tip, body.compact .chat, body.compact .mood-ring { display: none; }
     body.compact .bubble { top: 8px; background: rgba(26, 30, 36, .85); }
     body.compact .window-bar { display: flex !important; position: fixed; inset: 0 0 auto; z-index: 99999; width: 100%; height: 36px; padding-left: 76px; background: transparent !important; border-bottom: 0; color: rgba(255, 255, 255, .92); text-shadow: 0 1px 3px rgba(0, 0, 0, .85); }
-    body.compact model-viewer { transition: none !important; }
 
-    @media (max-width: 760px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; display: flex; flex-direction: column; overflow: visible; } .stage { min-height: 48vh; } model-viewer { min-height: 300px; } .chat { min-height: 52vh; height: 52vh; border-left: 0; border-top: 1px solid #363c46; } }
+    @media (max-width: 760px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; display: flex; flex-direction: column; overflow: visible; } .stage { min-height: 48vh; } #viewport { min-height: 300px; } .chat { min-height: 52vh; height: 52vh; border-left: 0; border-top: 1px solid #363c46; } }
   </style>
 </head>
 <body>
@@ -85,8 +91,9 @@
       </div>
       <div class="stage-body">
         <div class="mood-ring" id="ring" data-mood="idle"></div>
-        <model-viewer id="assistant" src="/assets/assistant.glb" alt="3D 智能助手" camera-controls shadow-intensity="0.35" style="background: transparent; --poster-color: rgba(0, 0, 0, 0);"></model-viewer>
+        <div id="viewport"><div class="load-tip" id="loadTip">正在加载 3D 模型…</div></div>
         <div class="bubble" id="bubble"></div>
+        <div class="hit-hint" id="hitHint"></div>
       </div>
       <div class="stage-tip">
         <div class="quick">
@@ -94,7 +101,7 @@
           <button id="act-pat" type="button">摸摸头</button>
           <button id="act-rest" type="button">去休息</button>
         </div>
-        <span>她会跟着鼠标转头、被戳会害羞、思考时会自己转圈。也可以拖动查看。</span>
+        <span>她的头会跟着你的鼠标转，点她的手她会挥手，拖动可以环视。</span>
       </div>
     </section>
     <section class="chat">
@@ -106,14 +113,20 @@
       </form>
     </section>
   </main>
-  <script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
     const messages = document.querySelector('#messages');
     const input = document.querySelector('#input');
     const statusEl = document.querySelector('#status');
     const stage = document.querySelector('#stage');
-    const assistant = document.querySelector('#assistant');
+    const viewport = document.querySelector('#viewport');
+    const loadTip = document.querySelector('#loadTip');
     const ring = document.querySelector('#ring');
     const bubble = document.querySelector('#bubble');
+    const hitHint = document.querySelector('#hitHint');
     const moodText = document.querySelector('#moodText');
     const bondBar = document.querySelector('#bondBar');
     const bondText = document.querySelector('#bondText');
@@ -126,15 +139,15 @@
       bond: Number(localStorage.getItem('assistant-bond') || 0),
       lastActive: Date.now(),
       dragging: false,
-      dragStartOrbit: null,
-      typing: false,
+      dragStartAzimuth: null,
+      dragMoved: false,
       sleeping: false,
-      base: null,
-      followFrame: 0,
-      followPointer: null,
+      busy: false,
+      pointer: null,
+      look: { x: 0, y: 0 },
+      hintAt: 0,
       bubbleTimer: null,
-      moodTimer: null,
-      busy: false
+      moodTimer: null
     };
 
     /* ---------- 基础状态与数值 ---------- */
@@ -153,8 +166,7 @@
       state.mood = next;
       ring.dataset.mood = next === 'curious' ? 'idle' : next;
       moodText.textContent = `心情：${MOOD_LABEL[next] || '待机'}`;
-      assistant.setAttribute('exposure', next === 'sleepy' ? '0.82' : '1.05');
-      assistant.style.filter = next === 'sleepy' ? 'saturate(.72) brightness(.9)' : '';
+      renderer.toneMappingExposure = next === 'sleepy' ? 0.7 : 1.0;
       if (state.moodTimer) clearTimeout(state.moodTimer);
       if (holdMs) {
         state.moodTimer = setTimeout(() => {
@@ -170,75 +182,209 @@
       state.bubbleTimer = setTimeout(() => bubble.classList.remove('show'), ms);
     };
 
-    /* ---------- 动作动画 ---------- */
+    /* ---------- Three.js 场景 ---------- */
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
+    let compactLayout = false;
+    const applyCameraLayout = (compact) => {
+      compactLayout = Boolean(compact);
+      // 普通聊天窗口和 360x400 悬浮窗口不是同一取景比例。
+      // 悬浮模式需要拉远相机，否则模型会比窗口/UI 更大并被裁切。
+      camera.position.set(0, compactLayout ? 0.98 : 0.95, compactLayout ? 4.85 : 3.35);
+      controls?.target?.set(0, compactLayout ? 0.86 : 0.82, 0);
+      camera.updateProjectionMatrix();
+    };
+    camera.position.set(0, 0.95, 3.35);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    viewport.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x2a2f38, 1.15));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.6);
+    keyLight.position.set(1.6, 2.4, 2.2);
+    scene.add(keyLight);
+    const fillLight = new THREE.DirectionalLight(0xaec3d8, 0.5);
+    fillLight.position.set(-1.8, 1.2, 1.4);
+    scene.add(fillLight);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.82, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enableZoom = false;
+    controls.enablePan = false;
+    controls.minPolarAngle = 0.9;
+    controls.maxPolarAngle = 1.85;
+    controls.rotateSpeed = 0.9;
+
+    const root = new THREE.Group();
+    scene.add(root);
+
+    let model = null, mixer = null, headBone = null, clips = {}, skeletonMeshes = [];
+    let leftHandBone = null, rightHandBone = null;
+    let baseAction = null, currentAction = null;
+    const LOOK_SIGN = { yaw: 1, pitch: 1 };
+    let clock = new THREE.Clock();
+    let spinSpeed = 0;
+
+    const resize = () => {
+      const w = viewport.clientWidth || 1, h = viewport.clientHeight || 1;
+      renderer.setPixelRatio(window.devicePixelRatio || 1);
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    new ResizeObserver(resize).observe(viewport);
+    resize();
+
+    new GLTFLoader().load('/assets/assistant.glb', (gltf) => {
+      model = gltf.scene;
+      root.add(model);
+      // 注意：不要对 gltf.scene 做缩放归一化。SkinnedMesh 的 bindMatrix 在
+      // 加载时已固定，且 Box3.setFromObject 对蒙皮网格拿到的是未蒙皮的
+      // bind-pose 包围盒（本模型只有 0.0166 m），据此缩放会把模型放大几十倍
+      // 并彻底破坏蒙皮。取景统一由相机参数处理。
+      gltf.animations.forEach((clip) => { clips[clip.name] = clip; });
+      mixer = new THREE.AnimationMixer(model);
+      mixer.addEventListener('finished', () => backToIdle());
+      model.traverse((o) => {
+        if (o.isMesh || o.isSkinnedMesh) skeletonMeshes.push(o);
+        if (o.isSkinnedMesh) o.frustumCulled = false;
+        if (o.isBone) {
+          const n = o.name.replace(/:/g, '');
+          if (/^(mixamorig)?Head$/i.test(n) && !headBone) headBone = o;
+          if (/^(mixamorig)?LeftHand$/i.test(n)) leftHandBone = o;
+          if (/^(mixamorig)?RightHand$/i.test(n)) rightHandBone = o;
+        }
+      });
+      if (!headBone) {
+        model.traverse((o) => {
+          if (o.isBone && /head/i.test(o.name) && !/top_end/i.test(o.name) && !headBone) headBone = o;
+        });
+      }
+      const idle = clips.Idle || gltf.animations[0];
+      if (idle) {
+        baseAction = mixer.clipAction(idle);
+        baseAction.setLoop(THREE.LoopRepeat).play();
+        currentAction = baseAction;
+      }
+      loadTip.remove();
+      onModelReady();
+    }, undefined, () => {
+      loadTip.textContent = '模型加载失败，检查资源文件';
+      statusEl.textContent = '模型加载失败';
+    });
+
+    const onModelReady = () => {
+      updateBond(0);
+      setTimeout(() => { if (!state.sleeping) showBubble('我准备好了，随时可以开始。', 2600); }, 600);
+    };
+
+    /* ---------- 动作播放与混合 ---------- */
+
+    const backToIdle = () => {
+      if (!mixer) return;
+      const idle = baseAction;
+      if (currentAction && currentAction !== idle) {
+        currentAction.fadeOut(0.18);
+        idle.reset().fadeIn(0.18).play();
+        currentAction = idle;
+      }
+    };
+
+    const playAction = (name, { hold = 0 } = {}) => {
+      if (!mixer || !clips[name]) return false;
+      const next = mixer.clipAction(clips[name]);
+      next.setLoop(THREE.LoopOnce);
+      next.clampWhenFinished = false;
+      if (currentAction && currentAction !== next) currentAction.fadeOut(0.15);
+      next.reset().fadeIn(0.15).play();
+      currentAction = next;
+      return true;
+    };
 
     const bounce = (strength = 1) => {
-      assistant.animate([
-        { transform: 'translateY(0) scale(1)' },
-        { transform: `translateY(${-10 * strength}px) scale(${1 + 0.02 * strength})` },
-        { transform: 'translateY(0) scale(1)' }
-      ], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' });
-    };
-
-    const nod = () => {
-      assistant.animate([
-        { transform: 'rotate(0deg)' },
-        { transform: 'rotate(-2.5deg)' },
-        { transform: 'rotate(2.5deg)' },
-        { transform: 'rotate(0deg)' }
-      ], { duration: 480, easing: 'ease-in-out' });
-    };
-
-    const shake = () => {
-      assistant.animate([
-        { transform: 'translateX(0) rotate(0deg)' },
-        { transform: 'translateX(-5px) rotate(-1.5deg)' },
-        { transform: 'translateX(5px) rotate(1.5deg)' },
-        { transform: 'translateX(-3px) rotate(-1deg)' },
-        { transform: 'translateX(0) rotate(0deg)' }
-      ], { duration: 380, easing: 'ease-in-out' });
-    };
-
-    /* ---------- 相机：跟随鼠标转头 ---------- */
-
-    const saveBaseOrbit = () => {
-      if (typeof assistant.getCameraOrbit !== 'function') return;
-      const orbit = assistant.getCameraOrbit();
-      if (!orbit) return;
-      state.base = {
-        theta: orbit.theta * 180 / Math.PI,
-        phi: orbit.phi * 180 / Math.PI,
-        radius: orbit.radius
+      const t0 = performance.now();
+      const hop = (now) => {
+        const t = (now - t0) / 420;
+        if (t >= 1) { root.position.y = 0; return; }
+        root.position.y = Math.sin(t * Math.PI) * 0.035 * strength;
+        requestAnimationFrame(hop);
       };
+      requestAnimationFrame(hop);
     };
 
-    const applyFollow = () => {
-      state.followFrame = 0;
-      if (!state.base || !state.followPointer || state.dragging || state.sleeping) return;
-      const rect = assistant.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const nx = Math.max(-.5, Math.min(.5, (state.followPointer.x - rect.left) / rect.width - .5));
-      const ny = Math.max(-.5, Math.min(.5, (state.followPointer.y - rect.top) / rect.height - .5));
-      const theta = state.base.theta + nx * 30;
-      const phi = Math.max(62, Math.min(104, state.base.phi - ny * 12));
-      assistant.setAttribute('camera-orbit', `${theta.toFixed(2)}deg ${phi.toFixed(2)}deg ${state.base.radius}m`);
+    const nod = () => { if (!playAction('Nod')) bounce(0.8); };
+    const shake = () => { if (!playAction('Shake')) bounce(0.5); };
+    const wave = () => { if (!playAction('Wave')) bounce(1); };
+    const waveLeft = () => { if (!playAction('WaveLeft')) bounce(0.8); };
+    const thinkPose = () => { if (!playAction('Think')) setMood('thinking'); };
+    const happyPose = () => { playAction('Happy'); };
+
+    /* ---------- 头部看鼠标（带撤销，避免逐帧累积把头拧到背后） ---------- */
+
+    const _parentQ = new THREE.Quaternion();
+    const _yawQ = new THREE.Quaternion();
+    const _pitchQ = new THREE.Quaternion();
+    const _lookLp = new THREE.Quaternion();
+    let _appliedLook = null;
+    const Y_AXIS = new THREE.Vector3(0, 1, 0);
+    const X_AXIS = new THREE.Vector3(1, 0, 0);
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+    // 必须在 mixer.update() 之前调用。旧写法每帧把 headBone.quaternion 当作
+    // rest 再叠加 look：当某个 clip 没有 Head 通道时 mixer 不会覆盖该值，
+    // 头就会逐帧越转越歪，最终拧到背后（截图里那个怪头的主因）。
+    const undoLook = () => {
+      if (_appliedLook && headBone) {
+        headBone.quaternion.premultiply(_appliedLook.clone().invert());
+        _appliedLook = null;
+      }
     };
 
-    const queueFollow = (event) => {
-      state.followPointer = { x: event.clientX, y: event.clientY };
-      if (!state.followFrame) state.followFrame = requestAnimationFrame(applyFollow);
+    const applyLook = () => {
+      if (!headBone || !model || state.dragging) return;
+      // 动作播放期间降低跟随强度，避免和动作自身的头部旋转叠加
+      const busy = currentAction && currentAction !== baseAction ? 0.45 : 1;
+      const influence = (state.sleeping ? 0.2 : 1) * busy;
+      const yaw = clamp(state.look.x * 0.45 * LOOK_SIGN.yaw * influence, -0.26, 0.26);
+      const pitch = clamp(state.look.y * 0.3 * LOOK_SIGN.pitch * influence, -0.16, 0.16);
+      if (Math.abs(yaw) + Math.abs(pitch) < 0.001) return;
+      headBone.parent.getWorldQuaternion(_parentQ);
+      _yawQ.setFromAxisAngle(Y_AXIS, yaw);
+      _pitchQ.setFromAxisAngle(X_AXIS, pitch);
+      const worldRot = _yawQ.clone().multiply(_pitchQ);
+      // 世界空间旋转 -> 父骨骼局部空间：parentQ^-1 * R * parentQ
+      _lookLp.copy(_parentQ).invert().multiply(worldRot).multiply(_parentQ);
+      headBone.quaternion.premultiply(_lookLp);
+      _appliedLook = _lookLp.clone();
     };
 
-    const startSpin = (degPerSecond = 90) => {
-      assistant.setAttribute('auto-rotate', '');
-      assistant.setAttribute('rotation-per-second', `${degPerSecond}deg`);
-    };
+    /* ---------- 渲染循环 ---------- */
 
-    const stopSpin = () => {
-      assistant.removeAttribute('auto-rotate');
-      assistant.removeAttribute('rotation-per-second');
-      if (state.base) assistant.setAttribute('camera-orbit', `${state.base.theta}deg ${state.base.phi}deg ${state.base.radius}m`);
+    const render = () => {
+      requestAnimationFrame(render);
+      const dt = clock.getDelta();
+      undoLook();
+      if (mixer) {
+        mixer.timeScale = state.sleeping ? 0.55 : 1;
+        mixer.update(dt);
+      }
+      if (spinSpeed && !state.dragging) {
+        root.rotation.y += spinSpeed * dt;
+      } else {
+        root.rotation.y *= 0.94;
+      }
+      applyLook();
+      controls.update();
+      renderer.render(scene, camera);
     };
+    render();
 
     /* ---------- 互动反馈 ---------- */
 
@@ -264,12 +410,27 @@
       if (state.busy) return;
       state.lastActive = Date.now();
       wakeUp();
-      setMood('happy', 2200);
-      bounce(1);
-      showBubble(state.bond >= 80 ? pick(HELLO_LINES) + '（亲和度高）' : pick(HELLO_LINES));
+      setMood('happy', 2400);
+      wave();
+      showBubble(state.bond >= 80 ? '你好啊，今天也一起加油吧。' : '你好啊！我在这里。');
       updateBond(2);
-      add('我朝你挥了挥手。', 'assistant');
+      add('她抬起手朝你挥了挥：「你好啊。」', 'assistant');
       logEvent('assistant_greet');
+    };
+
+    const handTouch = (side) => {
+      if (state.busy) return;
+      state.lastActive = Date.now();
+      wakeUp();
+      setMood('happy', 2400);
+      (side === 'left' ? waveLeft() : wave());
+      const lines = side === 'left'
+        ? ['这只手也要打招呼吗？', '左手也举起来了。']
+        : ['你好啊！是要握手吗？', '嗨，我在这里。', '你好啊，很高兴见到你。'];
+      showBubble(pick(lines));
+      updateBond(3);
+      add(`你碰到了她的${side === 'left' ? '左' : '右'}手，她抬起手回应了你。`, 'assistant');
+      logEvent('assistant_hand_touch', { side });
     };
 
     const pat = () => {
@@ -277,7 +438,7 @@
       state.lastActive = Date.now();
       wakeUp();
       setMood('shy', 2600);
-      nod();
+      playAction('Pat') || nod();
       showBubble(pick(PAT_LINES));
       updateBond(4);
       add('她被摸头了，看起来有点高兴。', 'assistant');
@@ -299,7 +460,6 @@
     const rest = () => {
       state.sleeping = true;
       setMood('sleepy');
-      stopSpin();
       showBubble('那我先安静一会儿，你叫我一声就好。', 3200);
       add('她闭上眼睛，进入了待机状态。', 'assistant');
       logEvent('assistant_rest');
@@ -312,48 +472,113 @@
       showBubble(pick(WAKE_LINES));
     };
 
+    /* ---------- 命中检测: 点击手 vs 点击身体 ---------- */
+
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+
+    const pickModel = (clientX, clientY) => {
+      if (!model || !skeletonMeshes.length) return null;
+      const rect = viewport.getBoundingClientRect();
+      ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+      raycaster.setFromCamera(ndc, camera);
+      const hits = raycaster.intersectObjects(skeletonMeshes, false);
+      if (!hits.length) return null;
+      return model.worldToLocal(hits[0].point.clone());
+    };
+
+    const _handProj = new THREE.Vector3();
+    const handScreen = () => {
+      const rect = viewport.getBoundingClientRect();
+      const out = [];
+      for (const [side, bone] of [['left', leftHandBone], ['right', rightHandBone]]) {
+        if (!bone) continue;
+        bone.getWorldPosition(_handProj);
+        _handProj.project(camera);
+        out.push({ side,
+          x: rect.left + (_handProj.x + 1) * 0.5 * rect.width,
+          y: rect.top + (1 - _handProj.y) * 0.5 * rect.height });
+      }
+      return out;
+    };
+    const handAt = (clientX, clientY) => {
+      // 只看手骨骼的屏幕投影距离：不用射线命中做前置判断，
+      // 否则待机手臂微摆会让"点手"时灵时不灵。完全不依赖 3D 单位。
+      const rect = viewport.getBoundingClientRect();
+      let best = null, bestD = rect.height * 0.07;
+      for (const h of handScreen()) {
+        const d = Math.hypot(clientX - h.x, clientY - h.y);
+        if (d < bestD) { bestD = d; best = h.side; }
+      }
+      return best;
+    };
+
+    const hintAt = (clientX, clientY) => {
+      const now = performance.now();
+      if (now - state.hintAt < 90) return;
+      state.hintAt = now;
+      const side = handAt(clientX, clientY);
+      if (!side) { hitHint.classList.remove('show'); return; }
+      hitHint.textContent = '点一下手 → 打招呼';
+      const rect = viewport.getBoundingClientRect();
+      hitHint.style.left = `${clientX - rect.left}px`;
+      hitHint.style.top = `${clientY - rect.top}px`;
+      hitHint.classList.add('show');
+    };
+
     /* ---------- 鼠标与拖拽 ---------- */
 
     stage.addEventListener('pointermove', (event) => {
-      if (state.dragging) return;
+      state.lastActive = Math.max(state.lastActive, 0);
       if (state.mood === 'idle' && Math.random() < 0.01) setMood('curious', 1200);
-      queueFollow(event);
+      const rect = viewport.getBoundingClientRect();
+      state.pointer = { x: event.clientX, y: event.clientY };
+      state.look.x = Math.max(-.5, Math.min(.5, (event.clientX - rect.left) / rect.width - .5));
+      state.look.y = Math.max(-.5, Math.min(.5, (event.clientY - rect.top) / rect.height - .5));
+      hintAt(event.clientX, event.clientY);
     });
 
-    assistant.addEventListener('pointerdown', () => {
+    stage.addEventListener('pointerleave', () => {
+      hitHint.classList.remove('show');
+      state.look.x *= 0.5; state.look.y *= 0.5;
+    });
+
+    renderer.domElement.addEventListener('pointerdown', (event) => {
       state.dragging = true;
+      state.dragMoved = false;
       state.lastActive = Date.now();
-      if (typeof assistant.getCameraOrbit === 'function') {
-        const orbit = assistant.getCameraOrbit();
-        state.dragStartOrbit = orbit ? orbit.theta * 180 / Math.PI : null;
-      }
+      state.dragStartAzimuth = controls.getAzimuthalAngle();
     });
 
     const endDrag = () => {
       if (!state.dragging) return;
       state.dragging = false;
-      if (state.dragStartOrbit !== null && typeof assistant.getCameraOrbit === 'function') {
-        const orbit = assistant.getCameraOrbit();
-        const now = orbit ? orbit.theta * 180 / Math.PI : state.dragStartOrbit;
-        let delta = Math.abs(now - state.dragStartOrbit);
-        if (delta > 180) delta = 360 - delta;
-        if (delta > 110) {
+      if (state.dragStartAzimuth !== null) {
+        let delta = Math.abs(controls.getAzimuthalAngle() - state.dragStartAzimuth);
+        if (delta > Math.PI) delta = Math.PI * 2 - delta;
+        if (delta > 1.6) {
           setMood('annoyed', 1800);
           shake();
           showBubble(pick(DIZZY_LINES));
-        } else {
-          saveBaseOrbit();
+          state.dragMoved = true;
+        } else if (delta > 0.07) {
+          state.dragMoved = true;
         }
       }
-      state.dragStartOrbit = null;
-      if (state.followPointer) queueFollow({ clientX: state.followPointer.x, clientY: state.followPointer.y });
+      state.dragStartAzimuth = null;
     };
 
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
 
-    assistant.addEventListener('click', poke);
-    assistant.addEventListener('dblclick', () => { if (!state.busy) greet(); });
+    renderer.domElement.addEventListener('click', (event) => {
+      if (state.dragMoved) { state.dragMoved = false; return; }
+      const side = handAt(event.clientX, event.clientY);
+      if (side) handTouch(side);
+      else poke();
+    });
+
+    renderer.domElement.addEventListener('dblclick', () => { if (!state.busy) greet(); });
 
     /* ---------- 空闲与自主动作 ---------- */
 
@@ -372,7 +597,7 @@
       if (Date.now() - state.lastActive < 15000) return;
       setMood('curious', 1800);
       showBubble(pick(AMBIENT_LINES), 3000);
-      bounce(0.4);
+      happyPose();
     }, 32000);
 
     /* ---------- 聊天 ---------- */
@@ -398,11 +623,13 @@
     const applyMode = (modeName) => {
       const compact = modeName === 'compact';
       document.body.classList.toggle('compact', compact);
-      assistant.setAttribute('shadow-intensity', compact ? '0' : '0.35');
-      assistant.style.background = 'transparent';
-      assistant.style.setProperty('--poster-color', 'rgba(0, 0, 0, 0)');
       updateModeLabel(compact);
-      requestAnimationFrame(() => { saveBaseOrbit(); if (state.followPointer) queueFollow(state.followPointer); });
+      applyCameraLayout(compact);
+      // 等窗口尺寸和 CSS 完成一轮布局后再同步 renderer，避免 UI 与模型错一拍。
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        resize();
+        controls.update();
+      }));
     };
 
     if (window.desktop) {
@@ -412,17 +639,6 @@
       mode.addEventListener('click', async () => applyMode((await window.desktop.setMode(!document.body.classList.contains('compact'))) ? 'compact' : 'normal'));
       window.desktop.onModeChanged(applyMode);
     }
-
-    assistant.addEventListener('load', () => {
-      saveBaseOrbit();
-      updateBond(0);
-      setTimeout(() => { if (!state.sleeping) showBubble('我准备好了，随时可以开始。', 2600); }, 600);
-    });
-
-    assistant.addEventListener('error', () => {
-      statusEl.textContent = '模型加载失败';
-      showBubble('模型没有加载出来，检查一下资源文件。', 4000);
-    });
 
     document.querySelector('#act-hello').addEventListener('click', greet);
     document.querySelector('#act-pat').addEventListener('click', pat);
@@ -445,7 +661,8 @@
       add(text, 'user');
       input.value = '';
       setBusy(true, 'thinking');
-      startSpin(110);
+      thinkPose();
+      spinSpeed = 1.6;
       statusEl.textContent = '正在思考…';
       const pending = add('正在思考…', 'assistant pending');
       showBubble('让我想一想。', 8000);
@@ -458,17 +675,17 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || '请求失败');
         pending.remove();
-        stopSpin();
+        spinSpeed = 0;
         setBusy(false);
         setMood('speaking', 2600);
-        bounce(0.9);
+        happyPose();
         add(data.reply, 'assistant');
         showBubble('说完了，你接着讲。');
         statusEl.textContent = '后端已连接 · 数据已记录';
         updateBond(5);
       } catch (error) {
         pending.remove();
-        stopSpin();
+        spinSpeed = 0;
         setBusy(false);
         setMood('annoyed', 2000);
         shake();
@@ -476,6 +693,18 @@
         statusEl.textContent = '后端连接失败';
       }
     });
+
+    /* 调试/自动化测试钩子(不影响正常功能) */
+    window.__assistantDebug = {
+      clips: () => Object.keys(clips),
+      playing: () => (currentAction ? currentAction.getClip().name : null),
+      playAction: (name) => playAction(name),
+      handAt: (x, y) => handAt(x, y), handScreen: () => handScreen(),
+      pickModel: (x, y) => pickModel(x, y),
+      viewportRect: () => { const r = viewport.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; },
+      scene: () => scene, camera: () => camera, model: () => model,
+      skeletonMeshes: () => skeletonMeshes, THREE,
+    };
   </script>
 </body>
 </html>

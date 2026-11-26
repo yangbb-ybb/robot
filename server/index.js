@@ -51,7 +51,10 @@ function serveStatic(req, res) {
   fs.stat(target, (err, stat) => {
     if (err || !stat.isFile()) return sendJson(res, 404, { error: '页面或资源不存在' });
     const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.glb': 'model/gltf-binary', '.png': 'image/png' };
-    res.writeHead(200, { 'Content-Type': types[path.extname(target)] || 'application/octet-stream' });
+    res.writeHead(200, {
+      'Content-Type': types[path.extname(target)] || 'application/octet-stream',
+      'Cache-Control': 'no-cache, must-revalidate'
+    });
     fs.createReadStream(target).pipe(res);
   });
 }
